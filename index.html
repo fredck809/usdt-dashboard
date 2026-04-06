@@ -1,123 +1,205 @@
-<DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>USDT Funding Dashboard</title>
+<title>USDT Investment Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- QRCode.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <style>
-body { font-family: Arial; background:#0b0f1a; color:white; text-align:center; margin:0; padding:20px;}
-h1,h2{margin:10px;}
-button,input{padding:10px;margin:5px;border-radius:8px;border:none;}
-button{cursor:pointer;}
-.container{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:20px;max-width:600px;margin:auto;padding:20px;}
-.card{padding:20px;background:#1e293b;border-radius:12px;cursor:pointer;transition:.3s;}
-.card:hover{background:#2563eb;}
-table{margin:auto;margin-top:20px;width:90%;border-collapse:collapse;}
-th,td{border:1px solid gray;padding:8px;text-align:center;}
+/* --- General Styles --- */
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(to right, #0b0f1a, #1c2237);
+  color: #fff;
+}
+h1,h2,h3 {text-align:center;margin:10px 0;}
+button {
+  cursor:pointer;
+  border:none;
+  border-radius:8px;
+  padding:12px 20px;
+  font-weight:600;
+  transition:0.3s;
+}
+button:hover {opacity:0.85;}
+
+/* --- Containers --- */
+.container {max-width:700px;margin:20px auto;padding:20px;text-align:center;}
+section {display:none;}
+
+/* --- Hero Section --- */
+.hero {background:url('https://images.unsplash.com/photo-1611095564982-4c376e7c7eaf?auto=format&fit=crop&w=1400&q=80') center/cover no-repeat; padding:60px 20px; border-radius:12px; margin:20px;}
+
+/* --- Card Layout for Amounts --- */
+.card-container {display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:20px;margin:20px 0;}
+.card {background:#1e293b;padding:20px;border-radius:12px;font-weight:600;font-size:18px;transition:0.3s; cursor:pointer;}
+.card:hover {background:#2563eb;}
+
+/* --- QR Code --- */
+#qrcode {margin:20px auto;}
+
+/* --- Table for Deposits --- */
+table {width:100%;border-collapse:collapse;margin-top:20px;}
+th,td{padding:10px;border:1px solid #444;text-align:center;}
+th{background:#1e293b;} td{background:#111827;}
+
+/* --- Buttons --- */
+.copy-btn {background:#2563eb;margin-top:10px;display:inline-block;}
+.back-btn {background:#444;}
+
+/* --- Chart Container --- */
+.chart-container {width:100%;max-width:650px;margin:30px auto;}
 </style>
 </head>
 <body>
 
-<h1>Fund Your Account</h1>
+<!-- ===== Amount Selection ===== -->
+<section id="amount-section">
+  <div class="hero">
+    <h1>Fund Your USDT Wallet</h1>
+    <p>Select an amount to deposit</p>
+  </div>
+  <div class="container">
+    <div class="card-container">
+      <div class="card" onclick="goConfirm(50)">$50</div>
+      <div class="card" onclick="goConfirm(100)">$100</div>
+      <div class="card" onclick="goConfirm(250)">$250</div>
+      <div class="card" onclick="goConfirm(500)">$500</div>
+    </div>
+    <input type="number" id="customAmount" placeholder="Custom amount $" style="padding:10px;width:60%;">
+    <button onclick="customGoConfirm()">Continue</button>
+  </div>
+</section>
 
-<!-- AUTH -->
-<div id="authDiv">
-<h2>Login / Register</h2>
-<input type="email" id="email" placeholder="Email" />
-<input type="password" id="password" placeholder="Password" />
-<br>
-<button onclick="login()">Login</button>
-<button onclick="register()">Register</button>
-</div>
+<!-- ===== Confirmation Section ===== -->
+<section id="confirm-section">
+  <div class="container">
+    <h1>Confirm Your Deposit</h1>
+    <p>Deposit Amount: <span id="confirm-amount"></span></p>
+    <p>Send USDT to this address:</p>
+    <p id="wallet-address" style="font-weight:bold;">0x14f00780A90E2D4EE3a954F256ABA50987884841</p>
+    <div id="qrcode"></div>
+    <button class="copy-btn" onclick="copyWallet()">Copy Wallet Address</button>
+    <br><br>
+    <button onclick="addDeposit()">I Sent It</button>
+    <button class="back-btn" onclick="backToAmount()">Back</button>
+  </div>
+</section>
 
-<!-- DASHBOARD -->
-<div id="dashboardDiv" style="display:none;">
-<h2>Your USDT Wallet</h2>
-<p>Send USDT to this address:</p>
-<p style="font-weight:bold;">0x14f00780A90E2D4EE3a954F256ABA50987884841</p>
-
-<h2>Select Amount to Fund</h2>
-<div class="container">
-<div class="card" onclick="addDeposit(50)">$50</div>
-<div class="card" onclick="addDeposit(100)">$100</div>
-<div class="card" onclick="addDeposit(250)">$250</div>
-<div class="card" onclick="addDeposit(500)">$500</div>
-</div>
-
-<input type="number" id="customAmount" placeholder="Custom $" />
-<button onclick="customDeposit()">Add Deposit</button>
-
-<h2>Your Deposits</h2>
-<table>
-<thead><tr><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
-<tbody id="txTable"></tbody>
-</table>
-</div>
+<!-- ===== Deposit Dashboard ===== -->
+<section id="dashboard-section">
+  <div class="container">
+    <h1>Your Deposits</h1>
+    <table>
+      <thead>
+        <tr><th>Amount</th><th>Status</th><th>Date</th></tr>
+      </thead>
+      <tbody id="txTable"></tbody>
+    </table>
+    <div class="chart-container">
+      <canvas id="depositChart"></canvas>
+    </div>
+    <button onclick="backToAmount()" class="back-btn">Add More Deposit</button>
+  </div>
+</section>
 
 <script type="module">
-import { db, auth } from "./firebase.js";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// ===== Simple Local Storage Mock (Replace with Firebase if needed) =====
+let selectedAmount = 0;
+let deposits = JSON.parse(localStorage.getItem('deposits')||'[]');
 
-// Functions for Auth
-window.register = async () => {
-  const email=document.getElementById("email").value;
-  const password=document.getElementById("password").value;
-  await createUserWithEmailAndPassword(auth,email,password);
-  alert("Registered!");
-};
-window.login = async () => {
-  const email=document.getElementById("email").value;
-  const password=document.getElementById("password").value;
-  await signInWithEmailAndPassword(auth,email,password);
-};
+// ===== Sections =====
+const amountSection = document.getElementById("amount-section");
+const confirmSection = document.getElementById("confirm-section");
+const dashboardSection = document.getElementById("dashboard-section");
 
-// Monitor auth state
-onAuthStateChanged(auth,user=>{
-  if(user){
-    document.getElementById("authDiv").style.display="none";
-    document.getElementById("dashboardDiv").style.display="block";
-    window.currentUser=user;
-    loadDeposits();
-  } else {
-    document.getElementById("authDiv").style.display="block";
-    document.getElementById("dashboardDiv").style.display="none";
-  }
-});
+// ===== Navigation =====
+function goConfirm(amount){
+  selectedAmount = amount;
+  document.getElementById("confirm-amount").innerText = "$" + amount;
+  amountSection.style.display="none";
+  confirmSection.style.display="block";
+}
+function customGoConfirm(){
+  const amount = parseFloat(document.getElementById("customAmount").value);
+  if(!amount || amount<=0){ alert("Enter valid amount"); return;}
+  goConfirm(amount);
+}
+function backToAmount(){
+  confirmSection.style.display="none";
+  dashboardSection.style.display="none";
+  amountSection.style.display="block";
+  loadDeposits();
+}
 
-// Deposit functions
-window.addDeposit = async (amount)=>{
-  const user=window.currentUser;
-  if(!user){ alert("Login first"); return; }
-  await addDoc(collection(db,"deposits"),{
-    uid:user.uid,
-    amount,
+// ===== QR Code =====
+function generateQRCode(text){
+  const container = document.getElementById("qrcode");
+  container.innerHTML="";
+  new QRCode(container,{text,width:128,height:128});
+}
+function copyWallet(){
+  navigator.clipboard.writeText(document.getElementById("wallet-address").innerText);
+  alert("Wallet address copied!");
+}
+
+// ===== Deposit =====
+function addDeposit(){
+  const deposit = {
+    amount:selectedAmount,
     status:"pending",
     date:new Date().toISOString()
-  });
-  alert("Deposit added! Send USDT to the wallet above.");
+  };
+  deposits.push(deposit);
+  localStorage.setItem('deposits',JSON.stringify(deposits));
+  confirmSection.style.display="none";
+  dashboardSection.style.display="block";
   loadDeposits();
-};
+}
 
-window.customDeposit = ()=>{
-  const amount=document.getElementById("customAmount").value;
-  if(!amount || amount<=0){ alert("Enter valid amount"); return; }
-  addDeposit(parseFloat(amount));
-};
-
-// Load deposits
-async function loadDeposits(){
-  const user=window.currentUser;
-  if(!user) return;
-  const q=query(collection(db,"deposits"),where("uid","==",user.uid));
-  const snapshot=await getDocs(q);
+// ===== Load Deposits =====
+function loadDeposits(){
   let html="";
-  snapshot.forEach(doc=>{
-    const d=doc.data();
+  deposits.forEach(d=>{
     html+=`<tr><td>$${d.amount}</td><td>${d.status}</td><td>${new Date(d.date).toLocaleString()}</td></tr>`;
   });
-  document.getElementById("txTable").innerHTML=html;
+  document.getElementById("txTable").innerHTML = html;
+  renderChart();
 }
+
+// ===== Chart.js Chart =====
+function renderChart(){
+  const ctx = document.getElementById('depositChart').getContext('2d');
+  const labels = deposits.map(d=>new Date(d.date).toLocaleDateString());
+  const data = deposits.map(d=>d.amount);
+  if(window.depositChart) window.depositChart.destroy();
+  window.depositChart = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets:[{
+        label:'Deposit Amount ($)',
+        data:data,
+        backgroundColor:'rgba(37,99,235,0.7)'
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true}}
+    }
+  });
+}
+
+// ===== Initial Setup =====
+amountSection.style.display="block";
+generateQRCode("0x14f00780A90E2D4EE3a954F256ABA50987884841");
+loadDeposits();
 </script>
 
 </body>
