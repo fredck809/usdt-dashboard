@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Privacy Policy</title>
+</head>
+<body>
+<h1>Privacy Policy</h1>
+<p>This project is for personal use and practice. No user data is shared with third parties.</p>
+</body>
+</html>

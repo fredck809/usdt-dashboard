@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>USDT Funding Dashboard</title>
+<style>
+body { font-family: Arial; background:#0b0f1a; color:white; text-align:center; margin:0; padding:20px;}
+h1,h2{margin:10px;}
+button,input{padding:10px;margin:5px;border-radius:8px;border:none;}
+button{cursor:pointer;}
+.container{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:20px;max-width:600px;margin:auto;padding:20px;}
+.card{padding:20px;background:#1e293b;border-radius:12px;cursor:pointer;transition:.3s;}
+.card:hover{background:#2563eb;}
+table{margin:auto;margin-top:20px;width:90%;border-collapse:collapse;}
+th,td{border:1px solid gray;padding:8px;text-align:center;}
+</style>
+</head>
+<body>
+
+<h1>Fund Your Account</h1>
+
+<!-- AUTH -->
+<div id="authDiv">
+<h2>Login / Register</h2>
+<input type="email" id="email" placeholder="Email" />
+<input type="password" id="password" placeholder="Password" />
+<br>
+<button onclick="login()">Login</button>
+<button onclick="register()">Register</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboardDiv" style="display:none;">
+<h2>Your USDT Wallet</h2>
+<p>Send USDT to this address:</p>
+<p style="font-weight:bold;">0x14f00780A90E2D4EE3a954F256ABA50987884841</p>
+
+<h2>Select Amount to Fund</h2>
+<div class="container">
+<div class="card" onclick="addDeposit(50)">$50</div>
+<div class="card" onclick="addDeposit(100)">$100</div>
+<div class="card" onclick="addDeposit(250)">$250</div>
+<div class="card" onclick="addDeposit(500)">$500</div>
+</div>
+
+<input type="number" id="customAmount" placeholder="Custom $" />
+<button onclick="customDeposit()">Add Deposit</button>
+
+<h2>Your Deposits</h2>
+<table>
+<thead><tr><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+<tbody id="txTable"></tbody>
+</table>
+</div>
+
+<script type="module">
+import { db, auth } from "./firebase.js";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// Functions for Auth
+window.register = async () => {
+  const email=document.getElementById("email").value;
+  const password=document.getElementById("password").value;
+  await createUserWithEmailAndPassword(auth,email,password);
+  alert("Registered!");
+};
+window.login = async () => {
+  const email=document.getElementById("email").value;
+  const password=document.getElementById("password").value;
+  await signInWithEmailAndPassword(auth,email,password);
+};
+
+// Monitor auth state
+onAuthStateChanged(auth,user=>{
+  if(user){
+    document.getElementById("authDiv").style.display="none";
+    document.getElementById("dashboardDiv").style.display="block";
+    window.currentUser=user;
+    loadDeposits();
+  } else {
+    document.getElementById("authDiv").style.display="block";
+    document.getElementById("dashboardDiv").style.display="none";
+  }
+});
+
+// Deposit functions
+window.addDeposit = async (amount)=>{
+  const user=window.currentUser;
+  if(!user){ alert("Login first"); return; }
+  await addDoc(collection(db,"deposits"),{
+    uid:user.uid,
+    amount,
+    status:"pending",
+    date:new Date().toISOString()
+  });
+  alert("Deposit added! Send USDT to the wallet above.");
+  loadDeposits();
+};
+
+window.customDeposit = ()=>{
+  const amount=document.getElementById("customAmount").value;
+  if(!amount || amount<=0){ alert("Enter valid amount"); return; }
+  addDeposit(parseFloat(amount));
+};
+
+// Load deposits
+async function loadDeposits(){
+  const user=window.currentUser;
+  if(!user) return;
+  const q=query(collection(db,"deposits"),where("uid","==",user.uid));
+  const snapshot=await getDocs(q);
+  let html="";
+  snapshot.forEach(doc=>{
+    const d=doc.data();
+    html+=`<tr><td>$${d.amount}</td><td>${d.status}</td><td>${new Date(d.date).toLocaleString()}</td></tr>`;
+  });
+  document.getElementById("txTable").innerHTML=html;
+}
+</script>
+
+</body>
+</html>

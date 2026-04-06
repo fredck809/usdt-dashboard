@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Terms of Service</title>
+</head>
+<body>
+<h1>Terms of Service</h1>
+<p>This project is for personal use and practice. No financial liability is assumed by the developer.</p>
+</body>
+</html>
